@@ -66,11 +66,12 @@ try {
     </form>
 
     <?php
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals($_SESSION['token'], $_POST['token'])) {
+    $check_request = $_SERVER['REQUEST_METHOD'] === 'POST';
+    if ($check_request && !hash_equals($_SESSION['token'], $_POST['token'])) {
         die();
-    } else if ($_SERVER['REQUEST_METHOD'] === 'POST' && !filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
+    } else if ($check_request && !filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
         echo "<div style=\"color: red\">Needs to be a valid email address</div>";
-    } else if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    } else if ($check_request) {
         $email = $_POST['email'];
         $text = $_POST['text'];
         $admin = userIsAdmin($conn) ? 1 : 0;

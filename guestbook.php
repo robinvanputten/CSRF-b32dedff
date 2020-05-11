@@ -66,23 +66,24 @@ try {
     </form>
 
     <?php
-    $check_request = $_SERVER['REQUEST_METHOD'] === 'POST';
-    if ($check_request && !hash_equals($_SESSION['token'], $_POST['token'])) {
-        die();
-    } else if ($check_request && !filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
-        echo "<div style=\"color: red\">Needs to be a valid email address</div>";
-    } else if ($check_request) {
-        $email = $_POST['email'];
-        $text = $_POST['text'];
-        $admin = userIsAdmin($conn) ? 1 : 0;
-        if (userIsAdmin($conn)) {
-            $color = $_POST['color'];
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (!hash_equals($_SESSION['token'], $_POST['token'])) {
+            die();
+        } else if (!filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
+            echo "<div style=\"color: red\">Needs to be a valid email address</div>";
         } else {
-            $color = 'red';
+            $email = $_POST['email'];
+            $text = $_POST['text'];
+            $admin = userIsAdmin($conn) ? 1 : 0;
+            if (userIsAdmin($conn)) {
+                $color = $_POST['color'];
+            } else {
+                $color = 'red';
+            }
+            $color = $_POST['color'];
+            $conn->query("INSERT INTO `entries`(`email`, `color`, `admin`, `text`)
+                                            VALUES ('$email', '$color', '$admin', '$text');");
         }
-        $color = $_POST['color'];
-        $conn->query("INSERT INTO `entries`(`email`, `color`, `admin`, `text`)
-                                        VALUES ('$email', '$color', '$admin', '$text');");
     }
     ?>
     <hr/>

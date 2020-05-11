@@ -1,4 +1,5 @@
 <?php
+session_start();
 $servername = "127.0.0.1";
 $username = "robin"; // PAS DEZE AAN ALS DAT NODIG IS
 $password = "password"; // PAS DEZE AAN ALS DAT NODIG IS
@@ -21,36 +22,70 @@ try {
         .body-container {
             background-color: aliceblue;
             width: 200px;
-            height: 100%;
             margin-left: auto;
             margin-right: auto;
             padding-left: 100px;
             padding-right: 100px;
+            padding-bottom: 20px;
         }
 
         .heading {
             text-align: center;
+        }
+
+        .disclosure-notice {
+            color: lightgray;
         }
     </style>
 </head>
 <body>
 <div class="body-container">
     <h1 class="heading">Gastenboek 'De lekkage'</h1>
-    <form action="guestbook_get.php">
+    <form action="guestbook.php" method="post">
+        <?php
+        session_start();
+        if (empty($_SESSION['token'])) {
+            $_SESSION['token'] = bin2hex(random_bytes(32));
+            echo "<input type=\"hidden\" name=\"token\" value=" . $_SESSION['token'] . "/>";
+        }
+        ?>
         Email: <input type="email" name="email"><br/>
-        <input type="hidden" value="red" name="color">
+        <?php
+        if (userIsAdmin($conn)) {
+            echo 'Color:';
+            echo '<input type="text" name="color">';
+        } else {
+            echo '<input type="hidden" value="red" name="color">';
+        }
+        ?>
         Bericht: <textarea name="text" minlength="4"></textarea><br/>
         <?php if (userIsAdmin($conn)) {
             echo "<input type\"hidden\" name=\"admin\" value=" . $_COOKIE['admin'] . "\">";
         } ?>
         <input type="submit">
     </form>
+
+    <?php
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && !hash_equals($_SESSION['token'], $_POST['token'])) {
+        die();
+    } else if ($_SERVER['REQUEST_METHOD'] === 'POST' && !filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
+        echo "<div style=\"color: red\">Needs to be a valid email address</div>";
+    } else if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $email = $_POST['email'];
+        $text = $_POST['text'];
+        $admin = userIsAdmin($conn) ? 1 : 0;
+        if (userIsAdmin($conn)) {
+            $color = $_POST['color'];
+        } else {
+            $color = 'red';
+        }
+        $color = $_POST['color'];
+        $conn->query("INSERT INTO `entries`(`email`, `color`, `admin`, `text`)
+                                        VALUES ('$email', '$color', '$admin', '$text');");
+    }
+    ?>
     <hr/>
     <?php
-    if (isset($_GET['email']) && isset($_GET['text'])) {
-        print "<div style=\"color: red\">Email: " . $_GET['email'];
-        print ": " . $_GET['text'] . "</div><br/>";
-    }
 
 
     $result = $conn->query("SELECT `email`, `text`, `color`, `admin` FROM `entries`");
@@ -59,7 +94,7 @@ try {
         if ($row['admin']) {
             print '&#9812;';
         }
-        print ": " . htmlspecialchars($row['text']) . "</div><br/>";
+        print ": " . $row['text'] . "</div><br/>";
     }
 
 
@@ -80,6 +115,19 @@ try {
     }
 
     ?>
+    <hr/>
+    <div class="disclosure-notice">
+        <p>
+            Hierbij krijgt iedereen expliciete toestemming om dit Gastenboek zelf te gebruiken voor welke doeleinden dan
+            ook.
+        </p>
+        <p>
+            Onthoud dat je voor andere websites altijd je aan de princiepes van
+            <a href="https://en.wikipedia.org/wiki/Responsible_disclosure" target="_blank" style="color: lightgray;">
+                Responsible Disclosure
+            </a> wilt houden.
+        </p>
+    </div>
 </div>
 </body>
 </html>
